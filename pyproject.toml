@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "alertify"
+version = "0.1.0"
+description = "Сервис уведомления пользователей"
+authors = ["Дмитрий Морозов <ADM713934@yandex.ru>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = {extras = ["all"], version = "^0.104.0"}
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
+pymongo = "^4.5.0"
+motor = "^3.3.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
