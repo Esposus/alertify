@@ -4,13 +4,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import config
 
 
-client = AsyncIOMotorClient(config.settings.db_uri)
+client = AsyncIOMotorClient(config.settings.DB_URI)
 db = client["alertify"]
 notifications_collection = db["notifications"]
 
 
 async def main():
-    data = await notifications_collection.find_one({})
+    data = notifications_collection.find({})
     print(data)
 
 

@@ -1,14 +1,15 @@
 # API Handlers
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from app.database import notifications_collection
-from app.schemas import (
+from database import notifications_collection
+from schemas import (
     Notification, ListNotificationParams, ReadNotificationParams
 )
+from send_email import send_email
 
 
 router = APIRouter()
@@ -31,38 +32,22 @@ async def create_notification(notification: Notification):
         upsert=True
     )
 
-    # TODO: Добавить отправку емейла
+    if notification.key == "registration" or notification.key == "new_login":
+        send_email(notification.key)
     return JSONResponse(content=jsonable_encoder(
         {"success": True}), status_code=status.HTTP_201_CREATED
     )
 
-
 @router.get("/list", response_model=dict)
-async def list_notifications(params: ListNotificationParams):
-    user_id = params.user_id
-    skip = params.skip
-    limit = params.limit
-
-    user_notifications = notifications_collection.find_one(
-        {"user_id": user_id},
-        {"_id": 0, "notifications": 1},
-    )
+async def list_notifications(user_id: str, skip: int = Query(0, ge=0), limit: int = Query(10, ge=1)):
+    user_notifications = await notifications_collection.find_one({"user_id": user_id}, {"_id": 0, "notifications": 1})
 
     if not user_notifications or not user_notifications.get("notifications"):
-        return JSONResponse(
-            content=jsonable_encoder(
-                {
-                    "success": True,
-                    "data": {"elements": 0, "new": 0, "list": []}
-                }
-            )
-        )
+        return JSONResponse(content=jsonable_encoder({"success": True, "data": {"elements": 0, "new": 0, "list": []}}))
 
     notifications = user_notifications["notifications"]
     total_elements = len(notifications)
-    new_elements = sum(
-        1 for notification in notifications if notification["is_new"]
-    )
+    new_elements = sum(1 for notification in notifications if notification["is_new"])
 
     response_data = {
         "elements": total_elements,
@@ -71,17 +56,15 @@ async def list_notifications(params: ListNotificationParams):
         "list": notifications[skip:skip + limit]
     }
 
-    return JSONResponse(
-        content=jsonable_encoder({"success": True, "data": response_data})
-    )
+    return JSONResponse(content=jsonable_encoder({"success": True, "data": response_data}))
 
 
-@router.post("/read", response_model=dict)
-async def read_notification(params: ReadNotificationParams):
+@router.post("/read")
+async def read_notification(params: ReadNotificationParams) -> JSONResponse:
     user_id = params.user_id
     notification_id = params.notification_id
 
-    result = notifications_collection.update_one(
+    result = await notifications_collection.update_one(
         {"user_id": user_id, "notifications.id": notification_id},
         {"$set": {"notifications.$.is_new": False}}
     )
@@ -89,7 +72,7 @@ async def read_notification(params: ReadNotificationParams):
     if result.matched_count == 0:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Notification not found"
+            detail="Сейчас уведомлений нет"
         )
 
     return JSONResponse(content=jsonable_encoder({"success": True}))
