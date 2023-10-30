@@ -1,38 +1,44 @@
 import smtplib
 from email.message import EmailMessage
 
-# from celery import Celery
+from fastapi import HTTPException, status
 
 from config import settings
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 465
-
-# celery = Celery('tasks', broker='redis://localhost:6379')
-
-# async def send_email():
-#     pass
-
-
-# email, "Notification", f"You have a new notification: {notification.key}"
 
 def set_email_content(notification: str):
     email = EmailMessage()
-    email['Subject'] = 'Notification'
+    email['Subject'] = settings.SMTP_NAME
     email['From'] = settings.SMTP_LOGIN
     email['To'] = settings.EMAIL
 
-    email.set_content(
-        '<div>'
-        f'<h1 style="color: red;"> Вы получили новое уведомление: {notification} </h1>'
-        '</div>',
-        subtype='html'
-    )
+    if notification == 'registration':
+        email.set_content(
+            '<div>'
+            '<h3 style="color: red;"> Регистрация прошла успешно </h3>'
+            f'статус: {notification}'
+            '</div>',
+            subtype='html'
+        )
+    elif notification == 'new_login':
+        email.set_content(
+            '<div>'
+            '<h3 style="color: red;"> Ваш логин обновлен! </h3>'
+            f'статус: {notification}'
+            '</div>',
+            subtype='html'
+        )
     return email
 
 
 def send_email(notification: str):
-    email = set_email_content(notification)
-    with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT) as server:
-        server.login(settings.SMTP_LOGIN, settings.SMTP_PASSWORD)
-        server.send_message(email)
+    try:
+        email = set_email_content(notification)
+        with smtplib.SMTP_SSL(settings.SMTP_HOST, settings.SMTP_PORT) as server:
+            server.login(settings.SMTP_LOGIN, settings.SMTP_PASSWORD)
+            server.send_message(email)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f'Ошибка при отправке электронной почты: {str(e)}'
+        )

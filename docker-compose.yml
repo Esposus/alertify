@@ -9,7 +9,7 @@ services:
     environment:
       MONGO_INITDB_DATABASE: alertifyprojectdb
     volumes:
-      - mongo-data:/data/db
+      - mongo:/data/db
 
   app:
     build:
@@ -21,3 +21,6 @@ services:
       - mongo
     env_file:
       - .env
+
+volumes:
+  mongo:
