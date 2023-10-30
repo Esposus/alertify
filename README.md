@@ -35,7 +35,7 @@ echo SMTP_NAME=Ace Place Alert >> .env
 ```
 4. Установите и запустите приложения в контейнерах:
 ```bash 
-docker-compose build & docker-compose up
+docker-compose up
 ```
 
 

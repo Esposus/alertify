@@ -87,9 +87,11 @@ async def read_notification(params: ReadNotificationParams) -> JSONResponse:
             {"$set": {"notifications.$.is_new": False}}
         )
         if result.matched_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Сейчас уведомлений нет"
+            return JSONResponse(
+                content=jsonable_encoder(
+                    {"success": False, "message": "Сейчас уведомлений нет"}
+                ),
+                status_code=status.HTTP_404_NOT_FOUND
             )
         return JSONResponse(content=jsonable_encoder({"success": True}))
     except Exception as e:
